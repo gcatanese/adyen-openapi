@@ -7,6 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - run: sed -i.bak "1s/.*/openapi: 3.0.3/" yaml/CheckoutService-v69ref.yaml      
+      - run: rm yaml/CheckoutService-v69ref.yaml.bak      
       - uses: addnab/docker-run-action@v3
         with:
           image: gcatanese/openapi-generator-postman-v2
