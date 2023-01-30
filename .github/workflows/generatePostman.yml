@@ -10,5 +10,6 @@ jobs:
       - uses: addnab/docker-run-action@v3
         with:
           image: gcatanese/openapi-generator-postman-v2
+          options: -v ${{ github.workspace }}:/usr/src/app
           run: generate -i json/CheckoutService-v69.json -o CheckoutService-v69.postman
 #      - uses: stefanzweifel/git-auto-commit-action@v4
