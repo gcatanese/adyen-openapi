@@ -11,5 +11,5 @@ jobs:
         with:
           image: gcatanese/openapi-generator-postman-v2
           options: -v ${{ github.workspace }}:/usr/src/app
-          run: ./script.sh generate -i json/CheckoutService-v69.json -o CheckoutService-v69.postman
+          run: /script.sh generate -i json/CheckoutService-v69.json -o CheckoutService-v69.postman
 #      - uses: stefanzweifel/git-auto-commit-action@v4
