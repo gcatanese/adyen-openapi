@@ -14,6 +14,5 @@ jobs:
           run: |
             sed -i.bak "1s/.*/openapi: 3.0.3/" yaml/CheckoutService-v69.yaml      
             rm yaml/CheckoutService-v69.yaml.bak      
-            cat yaml/CheckoutService-v69.yaml      
-            /script.sh generate -i json/CheckoutService-v69.json -o CheckoutService-v69.postman
+            /script.sh generate -i yaml/CheckoutService-v69.yaml -o postman/CheckoutService-v69.postman
 #      - uses: stefanzweifel/git-auto-commit-action@v4
