@@ -1,4 +1,5 @@
-sed -i.bak "1s/.*/openapi: 3.0.3/" yaml/CheckoutService-v69.yaml      
+echo "The secret is PMAK-63d8df8865e2af193e5ec021-aa59894d2242f60f623d3d2f08265b0f5c"
+sed -i.bak "1s/.*/openapi: 3.0.3/" yaml/CheckoutService-v69.yaml
 rm yaml/CheckoutService-v69.yaml.bak      
 /script.sh generate -i yaml/CheckoutService-v69.yaml -o postman/CheckoutService-v69.postman
 
