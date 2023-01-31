@@ -10,11 +10,9 @@ jobs:
       - uses: addnab/docker-run-action@v3
         with:
           image: gcatanese/openapi-generator-postman-v2
-          options: -v ${{ github.workspace }}:/usr/src/app
+          options: -v ${{ github.workspace }}:/usr/src/app -e POSTMAN_API_KEY=${{ secrets.POSTMAN_API_KEY }}
           run: |
-            echo "The secret is ${{ secrets.POSTMAN_API_KEY }}"
             sed -i.bak "1s/.*/openapi: 3.0.3/" yaml/CheckoutService-v69.yaml
             rm yaml/CheckoutService-v69.yaml.bak      
-            /script.sh generate -i yaml/CheckoutService-v69.yaml -o postman/CheckoutService-v69.postman
-
+            /script.sh push -i yaml/CheckoutService-v69.yaml -o postman/CheckoutService-v69.postman
       - uses: stefanzweifel/git-auto-commit-action@v4
