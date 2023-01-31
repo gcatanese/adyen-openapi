@@ -1,0 +1,4 @@
+sed -i.bak "1s/.*/openapi: 3.0.3/" yaml/CheckoutService-v69.yaml      
+rm yaml/CheckoutService-v69.yaml.bak      
+/script.sh generate -i yaml/CheckoutService-v69.yaml -o postman/CheckoutService-v69.postman
+
