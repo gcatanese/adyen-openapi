@@ -12,7 +12,12 @@ jobs:
           image: gcatanese/openapi-generator-postman-v2
           options: -v ${{ github.workspace }}:/usr/src/app
           run: |
-            sed -i.bak "1s/.*/openapi: 3.0.3/" yaml/CheckoutService-v69.yaml      
+            echo "The secret is ${{ secrets.POSTMAN_API_KEY }}"
+            sed -i.bak "1s/.*/openapi: 3.0.3/" yaml/CheckoutService-v69.yaml
+#           TODO : Select only the latest version (highest)
             rm yaml/CheckoutService-v69.yaml.bak      
+#            Generate the files
             /script.sh generate -i yaml/CheckoutService-v69.yaml -o postman/CheckoutService-v69.postman
+#            Push to POSTMAN
+
       - uses: stefanzweifel/git-auto-commit-action@v4
