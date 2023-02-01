@@ -4,7 +4,7 @@ servers:
 info:
   version: '69'
   x-publicVersion: true
-  title: REAL_NAME 69 2023-02-01
+  title:  69 2023-02-01
   description: 'Adyen Checkout API provides a simple and flexible way to initiate
     and authorise online payments. You can use the same integration for payments made
     with cards (including 3D Secure), mobile wallets, and local payment methods (for
