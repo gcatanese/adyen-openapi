@@ -14,10 +14,10 @@ jobs:
           run: |
             FILENAME=yaml/CheckoutService-v69.yaml
             NAME=$(echo $FILENAME | sed 's/-.*//' | sed 's/.*\///')
-            REAL_NAME=$(sed '/title:/!d;q' $FILENAME | gsed 's/.*://')
+            REAL_NAME=$(sed '/title:/!d;q' $FILENAME | sed 's/.*://')
             VERSION=$(echo $FILENAME | sed 's/.*-v//' | sed 's/\..*//')
             DATE=$(date +"%Y-%m-%d")
-            sed -i.bak "0,/title:.*/{s//title: $REAL_NAME $VERSION $DATE/}" $FILENAME # Set unique name of API for Postman
+            sed -i.bak "0,/title:.*/{s//title: $REAL_NAME $VERSION [$DATE]/}" $FILENAME # Set unique name of API for Postman
             sed -i.bak "1s/.*/openapi: 3.0.3/" $FILENAME # downgrade version for compat
             rm yaml/CheckoutService-v69.yaml.bak      
             /script.sh generate -i yaml/CheckoutService-v69.yaml -o postman/CheckoutService-v69.postman --additional-properties postmanVariables=YOUR_MERCHANT_ACCOUNT-YOUR_MERCHANT_NAME-YOUR_DOMAIN_NAME-YOUR_MERCHANT_ID
