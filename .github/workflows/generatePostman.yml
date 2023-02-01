@@ -3,7 +3,7 @@ name: Notify libraries
 on: push
 
 jobs:
-  generatePostman:
+  generateAndPushPostman:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
