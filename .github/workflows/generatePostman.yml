@@ -15,10 +15,6 @@ jobs:
             sed -i.bak "1s/.*/openapi: 3.0.3/" yaml/CheckoutService-v69.yaml
             rm yaml/CheckoutService-v69.yaml.bak      
             /script.sh generate -i yaml/CheckoutService-v69.yaml -o postman/CheckoutService-v69.postman --additional-properties postmanVariables=YOUR_MERCHANT_ACCOUNT-YOUR_MERCHANT_NAME-YOUR_DOMAIN_NAME-YOUR_MERCHANT_ID
-      - name: Set postman file to variable
-        run: |
-          FILE=$(cat postman/CheckoutService-v69.postman/postman.json)
-          echo "FILE_CONTENTS=$FILE" >> $GITHUB_ENV
       - name: Push to POSTMAN
         run: |
           echo "--> Pushing to Postman"
