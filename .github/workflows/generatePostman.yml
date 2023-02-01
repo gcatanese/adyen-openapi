@@ -12,7 +12,12 @@ jobs:
           image: gcatanese/openapi-generator-postman-v2
           options: -v ${{ github.workspace }}:/usr/src/app -e POSTMAN_API_KEY=${{ secrets.POSTMAN_API_KEY }}
           run: |
-            sed -i.bak "1s/.*/openapi: 3.0.3/" yaml/CheckoutService-v69.yaml
+            FILENAME=yaml/CheckoutService-v69.yaml
+            NAME=$(echo $FILENAME | sed 's/-.*//' | sed 's/.*\///')
+            VERSION=$(echo $FILENAME | sed 's/.*-v//' | sed 's/\..*//')
+            DATE=$(date +"%Y-%m-%d")
+            sed -i.bak "0,/title:.*/{s//title: $NAME $VERSION $DATE/}" $FILENAME
+            sed -i.bak "1s/.*/openapi: 3.0.3/" $FILENAME # downgrade version for compat
             rm yaml/CheckoutService-v69.yaml.bak      
             /script.sh generate -i yaml/CheckoutService-v69.yaml -o postman/CheckoutService-v69.postman --additional-properties postmanVariables=YOUR_MERCHANT_ACCOUNT-YOUR_MERCHANT_NAME-YOUR_DOMAIN_NAME-YOUR_MERCHANT_ID
       - name: Push to POSTMAN
