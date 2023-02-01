@@ -11,9 +11,8 @@ jobs:
         with:
           image: gcatanese/openapi-generator-postman-v2
           options: -v ${{ github.workspace }}:/usr/src/app -e POSTMAN_API_KEY=${{ secrets.POSTMAN_API_KEY }}
-            --additional-properties postmanVariables=YOUR_MERCHANT_ACCOUNT-YOUR_MERCHANT_NAME-YOUR_DOMAIN_NAME-YOUR_MERCHANT_ID
           run: |
             sed -i.bak "1s/.*/openapi: 3.0.3/" yaml/CheckoutService-v69.yaml
             rm yaml/CheckoutService-v69.yaml.bak      
-            /script.sh push -i yaml/CheckoutService-v69.yaml -o postman/CheckoutService-v69.postman
+            /script.sh push -i yaml/CheckoutService-v69.yaml -o postman/CheckoutService-v69.postman --additional-properties postmanVariables=YOUR_MERCHANT_ACCOUNT-YOUR_MERCHANT_NAME-YOUR_DOMAIN_NAME-YOUR_MERCHANT_ID
       - uses: stefanzweifel/git-auto-commit-action@v4
