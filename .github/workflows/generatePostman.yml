@@ -20,10 +20,12 @@ jobs:
           FILE=$(cat postman/CheckoutService-v69.postman/postman.json)
           echo "FILE_CONTENTS=$FILE" >> $GITHUB_ENV
       - name: Push to POSTMAN
-        uses: fjogeleit/http-request-action@v1
-        with:
-          url: 'https://api.getpostman.com/collections'
-          method: 'POST'
-          customHeaders: '{"Content-Type": "application/json", "X-API-Key": ${{ secrets.POSTMAN_API_KEY }} }'
-          data: ${{ env.FILE_CONTENTS }}
+        run: |
+          echo "--> Pushing to Postman"
+          FILE=$(cat postman/CheckoutService-v69.postman/postman.json)
+        
+          echo '{"collection": '"$FILE"' }' | curl -X POST \
+          --header 'Content-Type: application/json' \
+          --header 'X-API-Key: '"${{secrets.POSTMAN_API_KEY}}"'' \
+          -d @- "https://api.getpostman.com/collections"
       - uses: stefanzweifel/git-auto-commit-action@v4
