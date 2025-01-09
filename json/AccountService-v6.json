@@ -18,7 +18,7 @@
    },
    "tags" : [
       {
-         "name" : "Account holders xx"
+         "name" : "Account holders"
       },
       {
          "name" : "Accounts"
@@ -28,7 +28,7 @@
       }
    ],
    "paths" : {
-      "/checkAccountHolder" : {
+      "/checkAccountHolder2" : {
          "post" : {
             "tags" : [
                "Verification"
