@@ -4,7 +4,7 @@ servers:
 info:
   version: '3'
   x-publicVersion: true
-  title: Account API
+  title: Account API test
   description: "This API is used for the classic integration. If you are just starting\
     \ your implementation, refer to our [new integration guide](https://docs.adyen.com/adyen-for-platforms-model)\
     \ instead.\n\nThe Account API provides endpoints for managing account-related\
@@ -69,15 +69,6 @@ paths:
                 $ref: '#/components/schemas/CloseAccountResponse'
           description: Accepted - the request has been accepted for processing, but
             the processing has not been completed.
-        '400':
-          content:
-            application/json:
-              examples:
-                generic:
-                  $ref: '#/components/examples/generic-400'
-              schema:
-                $ref: '#/components/schemas/ServiceError'
-          description: Bad Request - a problem reading or understanding the request.
         '401':
           content:
             application/json:
@@ -1975,6 +1966,9 @@ components:
         resultCode:
           description: The result code.
           type: string
+        resultCode2:
+          description: The result code number 2.
+          type: string
         status:
           x-addedInVersion: '2'
           description: 'The status of the account.
@@ -2215,12 +2209,6 @@ components:
           - currencyCode
           - dateOfBirth
           - destinationAccountCode
-          - document
-          - documentContent
-          - documentExpirationDate
-          - documentIssuerCountry
-          - documentIssuerState
-          - documentName
           - documentNumber
           - documentType
           - doingBusinessAs
