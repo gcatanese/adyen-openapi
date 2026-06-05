@@ -1,0 +1,342 @@
+arazzo: "1.0.1"
+info:
+  title: Adyen Credit Limit API Workflows
+  version: "1.0.0"
+  description: |
+    Arazzo specification illustrating the end-to-end flows for the Credit Limit API v2.
+
+    Covers the following workflows:
+    1. Apply for a credit limit and poll until a decision is reached.
+    2. Allocate a credit line to a Balance Account once a limit is approved.
+    3. Update an existing credit line's billing configuration.
+    4. Retrieve statements for a Balance Account.
+
+sourceDescriptions:
+  - name: creditLimitApi
+    url: ./credit-limit-api-v2.yaml
+    type: openapi
+
+workflows:
+
+  # ── Workflow 1: Apply for a credit limit ──────────────────────────────────────
+  - workflowId: apply-for-credit-limit
+    summary: Apply for a credit limit
+    description: |
+      Submit a credit limit application for an account holder. Once the application
+      status reaches offered, accept the offer via PATCH to receive a creditLimitId.
+    inputs:
+      type: object
+      required:
+        - accountHolderId
+        - currency
+        - value
+      properties:
+        accountHolderId:
+          type: string
+          description: Unique identifier of the account holder.
+        currency:
+          type: string
+          description: ISO 4217 currency code for the requested limit.
+        value:
+          type: integer
+          description: Requested limit amount in minor units.
+
+    steps:
+      # Step 1 — Submit the application
+      - stepId: submit-application
+        description: POST a new credit limit application.
+        operationId: creditLimitApi.applications-post
+        requestBody:
+          contentType: application/json
+          payload:
+            accountHolderId: $inputs.accountHolderId
+            amount:
+              currency: $inputs.currency
+              value: $inputs.value
+        successCriteria:
+          - condition: $statusCode == 201
+        outputs:
+          applicationId: $response.body#/id
+
+      # Step 2 — GET the application to review its current status
+      - stepId: get-application-status
+        description: GET the application by ID to review the current status.
+        operationId: creditLimitApi.applications-get-id
+        parameters:
+          - name: applicationId
+            in: path
+            value: $steps.submit-application.outputs.applicationId
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body#/status == 'requested'
+            type: jsonpath
+            context: $response.body
+        outputs:
+          status: $response.body#/status
+
+      # Step 3 — Accept the offered credit limit
+      - stepId: accept-offer
+        description: |
+          PATCH the application with status acceptOffer after the application
+          status reaches offered.
+        operationId: creditLimitApi.applications-patch-id
+        dependsOn: get-application-status
+        parameters:
+          - name: applicationId
+            in: path
+            value: $steps.submit-application.outputs.applicationId
+        requestBody:
+          contentType: application/json
+          payload:
+            status: "acceptOffer"
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          status: $response.body#/status
+          creditLimitId: $response.body#/creditLimitId
+
+      # Step 4 — Retrieve the approved credit limit
+      - stepId: get-credit-limit
+        description: Fetch the approved credit limit resource using the creditLimitId.
+        operationId: creditLimitApi.limits-get-id
+        dependsOn: accept-offer
+        parameters:
+          - name: creditLimitId
+            in: path
+            value: $steps.accept-offer.outputs.creditLimitId
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          creditLimitId: $response.body#/id
+          approvedAmount: $response.body#/amount
+
+    outputs:
+      applicationId: $steps.submit-application.outputs.applicationId
+      applicationStatus: $steps.accept-offer.outputs.status
+      creditLimitId: $steps.get-credit-limit.outputs.creditLimitId
+      approvedAmount: $steps.get-credit-limit.outputs.approvedAmount
+
+  # ── Workflow 2: Allocate a credit line ────────────────────────────────────────
+  - workflowId: allocate-credit-line
+    summary: Allocate a credit line to a Balance Account
+    description: |
+      Using an approved credit limit, distribute a credit line to a specific Balance Account
+      with a billing cycle configuration. Replaces the legacy /allocate operation.
+    inputs:
+      type: object
+      required:
+        - creditLimitId
+        - balanceAccountId
+        - accountHolderId
+        - currency
+        - value
+        - billingDurationUnit
+        - billingDurationValue
+        - repaymentUnit
+        - repaymentValue
+      properties:
+        creditLimitId:
+          type: string
+          description: Approved credit limit ID (from the apply-for-credit-limit workflow).
+        balanceAccountId:
+          type: string
+        accountHolderId:
+          type: string
+        currency:
+          type: string
+        value:
+          type: integer
+          description: Credit line amount in minor units.
+        billingDurationUnit:
+          type: string
+          enum: [day, week, month]
+        billingDurationValue:
+          type: integer
+        repaymentUnit:
+          type: string
+          enum: [day, week, month]
+        repaymentValue:
+          type: integer
+
+    steps:
+      # Step 1 — Verify the credit limit exists
+      - stepId: verify-credit-limit
+        description: Confirm the credit limit exists before allocating a line.
+        operationId: creditLimitApi.limits-get-id
+        parameters:
+          - name: creditLimitId
+            in: path
+            value: $inputs.creditLimitId
+        successCriteria:
+          - condition: $statusCode == 200
+
+      # Step 2 — Create the credit line
+      - stepId: create-credit-line
+        description: POST a new credit line to the Balance Account.
+        operationId: creditLimitApi.createCreditLine
+        dependsOn: verify-credit-limit
+        requestBody:
+          contentType: application/json
+          payload:
+            balanceAccountId: $inputs.balanceAccountId
+            amount:
+              currency: $inputs.currency
+              value: $inputs.value
+            billing:
+              duration:
+                unit: $inputs.billingDurationUnit
+                value: $inputs.billingDurationValue
+              repayment:
+                unit: $inputs.repaymentUnit
+                value: $inputs.repaymentValue
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          creditLineId: $response.body#/id
+          billingConfig: $response.body#/billing
+
+      # Step 3 — Confirm the credit line details
+      - stepId: confirm-credit-line
+        description: GET the newly created credit line to verify its state.
+        operationId: creditLimitApi.getCreditLine
+        dependsOn: create-credit-line
+        parameters:
+          - name: id
+            in: path
+            value: $steps.create-credit-line.outputs.creditLineId
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          creditLineId: $response.body#/id
+
+    outputs:
+      creditLineId: $steps.create-credit-line.outputs.creditLineId
+      billingConfig: $steps.create-credit-line.outputs.billingConfig
+
+  # ── Workflow 3: Update a credit line billing configuration ────────────────────
+  - workflowId: update-credit-line
+    summary: Update billing configuration of a credit line
+    description: |
+      Modify the billing cycle duration or repayment schedule of an existing credit line.
+      Changes are scheduled for the next billing cycle; the response returns both the
+      current `billing` and a `scheduled` block reflecting the pending update.
+    inputs:
+      type: object
+      required:
+        - creditLineId
+        - billingDurationUnit
+        - billingDurationValue
+        - repaymentUnit
+        - repaymentValue
+      properties:
+        creditLineId:
+          type: string
+        billingDurationUnit:
+          type: string
+          enum: [day, week, month]
+        billingDurationValue:
+          type: integer
+        repaymentUnit:
+          type: string
+          enum: [day, week, month]
+        repaymentValue:
+          type: integer
+
+    steps:
+      # Step 1 — Fetch current credit line state
+      - stepId: get-current-credit-line
+        description: Retrieve the current credit line before updating.
+        operationId: creditLimitApi.getCreditLine
+        parameters:
+          - name: id
+            in: path
+            value: $inputs.creditLineId
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          currentBilling: $response.body#/billing
+
+      # Step 2 — Apply the billing update
+      - stepId: patch-credit-line
+        description: PATCH the credit line with the new billing configuration.
+        operationId: creditLimitApi.updateCreditLine
+        dependsOn: get-current-credit-line
+        parameters:
+          - name: id
+            in: path
+            value: $inputs.creditLineId
+        requestBody:
+          contentType: application/json
+          payload:
+            billing:
+              duration:
+                unit: $inputs.billingDurationUnit
+                value: $inputs.billingDurationValue
+              repayment:
+                unit: $inputs.repaymentUnit
+                value: $inputs.repaymentValue
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          activeBilling: $response.body#/billing
+          scheduledBilling: $response.body#/scheduled
+
+    outputs:
+      previousBilling: $steps.get-current-credit-line.outputs.currentBilling
+      activeBilling: $steps.patch-credit-line.outputs.activeBilling
+      scheduledBilling: $steps.patch-credit-line.outputs.scheduledBilling
+
+  # ── Workflow 4: Retrieve statements for a Balance Account ─────────────────────
+  - workflowId: retrieve-statements
+    summary: Retrieve billing statements for a Balance Account
+    description: |
+      Fetch all periodic billing statements associated with a Balance Account,
+      then retrieve the details of the most recent statement.
+    inputs:
+      type: object
+      required:
+        - balanceAccountId
+      properties:
+        balanceAccountId:
+          type: string
+
+    steps:
+      # Step 1 — List all statements for the Balance Account
+      - stepId: list-statements
+        description: GET all statements filtered by balanceAccountId.
+        operationId: creditLimitApi.statements-get
+        parameters:
+          - name: balanceAccountId
+            in: query
+            value: $inputs.balanceAccountId
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          statements: $response.body#/data
+          firstStatementId: $response.body#/data/0/id
+
+      # Step 2 — Get the details of the first (most recent) statement
+      - stepId: get-statement-detail
+        description: GET the full details of the first statement returned.
+        operationId: creditLimitApi.statements-get-id
+        dependsOn: list-statements
+        parameters:
+          - name: statementId
+            in: path
+            value: $steps.list-statements.outputs.firstStatementId
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          statementId: $response.body#/id
+          periodStart: $response.body#/periodStart
+          periodEnd: $response.body#/periodEnd
+          amount: $response.body#/amount
+          statementStatus: $response.body#/status
+
+    outputs:
+      statements: $steps.list-statements.outputs.statements
+      latestStatementId: $steps.get-statement-detail.outputs.statementId
+      latestStatementPeriodStart: $steps.get-statement-detail.outputs.periodStart
+      latestStatementPeriodEnd: $steps.get-statement-detail.outputs.periodEnd
+      latestStatementAmount: $steps.get-statement-detail.outputs.amount
+      latestStatementStatus: $steps.get-statement-detail.outputs.statementStatus
